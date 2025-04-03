@@ -13,12 +13,6 @@ body {
   margin: 0 auto;
 }
 
-.login-container {
-  text-align: center;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
 h1,
 h2 {
   color: #333;
@@ -87,9 +81,9 @@ button:hover {
   background-color: #2ca732;
 }
 
-.input-edit {
-  width: 100%;
-  padding: 2px;
+input,
+select {
+  padding: 5px;
   border: 1px solid #ddd;
   border-radius: 3px;
 }

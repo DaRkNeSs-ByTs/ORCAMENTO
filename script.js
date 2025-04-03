@@ -1,174 +1,172 @@
-// Configuração do Firebase (substitua pelos seus valores)
+// Configuração do Firebase (usando seus dados)
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_ID",
-  appId: "SEU_APP_ID",
+  apiKey: "AIzaSyD-2sAZHl_5LPYzmUKFfsz2sKpngXIlVSE",
+  authDomain: "gerenciador-servicos.firebaseapp.com",
+  projectId: "gerenciador-servicos",
+  storageBucket: "gerenciador-servicos.appspot.com", // Corrigido para .appspot.com
+  messagingSenderId: "557824843547",
+  appId: "1:557824843547:web:eacd2121ecfd3c2653bdbe",
+  measurementId: "G-ZMQ6MM17KK",
 };
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const db = firebase.firestore();
-let registros = [];
+const storage = firebase.storage();
 
-auth.onAuthStateChanged((user) => {
-  if (!user) {
-    // Se não houver usuário autenticado, redirecionar para login
-    window.location.href = "login.html";
-  } else {
-    carregarRegistros();
-  }
-});
-
-// Função para adicionar um registro
+// Função para adicionar registro
 function adicionarRegistro() {
-  const registro = criarRegistro();
-  if (!registro) return;
+  const arquivoInput = document.getElementById("arquivo").files[0];
+  const dados = {
+    solicitante: document.getElementById("solicitante").value,
+    loja: document.getElementById("loja").value,
+    servico: document.getElementById("servico").value,
+    orcamento: parseFloat(document.getElementById("orcamento").value),
+    infraspeak: document.getElementById("InfraSpeak").value,
+    mes: document.getElementById("mesServico").value,
+    faturamento: document.getElementById("faturamento").value,
+    situacao: document.getElementById("situacao").value,
+    tipo: document.getElementById("projetoManutencao").value,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+  };
 
-  db.collection("registros")
-    .add(registro)
-    .then((docRef) => {
-      console.log("Registro adicionado com ID: ", docRef.id);
-      carregarRegistros();
-      limparFormulario();
-    })
-    .catch((error) => {
-      console.error("Erro ao adicionar registro: ", error);
-      alert("Erro ao adicionar o registro. Verifique o console.");
-    });
+  if (arquivoInput) {
+    const storageRef = storage.ref(`orcamentos/${arquivoInput.name}`);
+    storageRef
+      .put(arquivoInput)
+      .then((snapshot) => {
+        return storageRef.getDownloadURL();
+      })
+      .then((url) => {
+        dados.arquivoUrl = url;
+        return db.collection("registros").add(dados);
+      })
+      .then((docRef) => {
+        console.log("Registro adicionado com ID: ", docRef.id);
+        listarRegistros();
+        document.getElementById("formServico").reset();
+      })
+      .catch((error) => {
+        console.error("Erro ao adicionar registro: ", error);
+      });
+  } else {
+    db.collection("registros")
+      .add(dados)
+      .then((docRef) => {
+        console.log("Registro adicionado com ID: ", docRef.id);
+        listarRegistros();
+        document.getElementById("formServico").reset();
+      })
+      .catch((error) => {
+        console.error("Erro ao adicionar registro: ", error);
+      });
+  }
 }
 
-// Função para carregar os registros
-function carregarRegistros() {
+// Função para listar registros
+function listarRegistros() {
+  const tbody = document.getElementById("corpoTabela");
+  tbody.innerHTML = "";
+
   db.collection("registros")
+    .orderBy("timestamp", "desc")
     .get()
     .then((querySnapshot) => {
-      registros = [];
       querySnapshot.forEach((doc) => {
-        registros.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        const row = `
+          <tr>
+            <td>${doc.id}</td>
+            <td>${data.solicitante}</td>
+            <td>${data.loja}</td>
+            <td>${data.servico}</td>
+            <td>R$ ${data.orcamento.toFixed(2)}</td>
+            <td>${data.infraspeak}</td>
+            <td>${data.mes}</td>
+            <td>${data.faturamento}</td>
+            <td>${data.situacao}</td>
+            <td>${data.tipo}</td>
+            <td>${
+              data.arquivoUrl
+                ? `<a href="${data.arquivoUrl}" target="_blank">Download</a>`
+                : "Nenhum"
+            }</td>
+            <td><button onclick="deletarRegistro('${
+              doc.id
+            }')">Deletar</button></td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
       });
-      console.log("Registros carregados:", registros);
-      atualizarTabela(registros);
-    })
-    .catch((error) => {
-      console.error("Erro ao carregar registros: ", error);
-      alert("Erro ao carregar registros. Verifique o console.");
     });
 }
 
-// Função para atualizar a tabela
-function atualizarTabela(registros) {
-  const corpoTabela = document.getElementById("corpoTabela");
-  corpoTabela.innerHTML = "";
-
-  registros.forEach((registro) => {
-    const tr = document.createElement("tr");
-    tr.dataset.id = registro.id;
-    tr.innerHTML = `
-      <td>${registro.id}</td>
-      <td>${registro.solicitante}</td>
-      <td>${registro.loja}</td>
-      <td>${registro.servico}</td>
-      <td>R$ ${registro.orcamento}</td>
-      <td>${registro.infraspeak}</td>
-      <td>${registro.mesServico}</td>
-      <td>${registro.faturamento}</td>
-      <td>${registro.situacao}</td>
-      <td>${registro.projetoManutencao}</td>
-      <td>
-        <button class="delete-btn" onclick="excluirRegistro('${registro.id}')">Excluir</button>
-      </td>
-    `;
-    corpoTabela.appendChild(tr);
-  });
-}
-
-function excluirRegistro(id) {
-  if (!confirm("Tem certeza que deseja excluir este registro?")) return;
-
+// Função para deletar registro
+function deletarRegistro(id) {
   db.collection("registros")
     .doc(id)
     .delete()
     .then(() => {
-      console.log("Registro excluído com sucesso.");
-      carregarRegistros();
+      console.log("Registro deletado");
+      listarRegistros();
     })
     .catch((error) => {
-      console.error("Erro ao excluir registro: ", error);
-      alert("Erro ao excluir o registro. Verifique o console.");
+      console.error("Erro ao deletar: ", error);
     });
-}
-
-// Função para criar um novo registro
-function criarRegistro() {
-  const solicitante = document.getElementById("solicitante").value.trim();
-  const loja = document.getElementById("loja").value.trim();
-  const servico = document.getElementById("servico").value.trim();
-  const orcamento = formatarOrcamento(
-    document.getElementById("orcamento").value.trim()
-  );
-  const infraspeak = document.getElementById("InfraSpeak").value.trim();
-  const mesServico = document.getElementById("mesServico").value;
-  const faturamento = document.getElementById("faturamento").value;
-  const situacao = document.getElementById("situacao").value;
-  const projetoManutencao = document.getElementById("projetoManutencao").value;
-
-  if (!solicitante || !loja || !servico || !orcamento || !infraspeak) {
-    alert("Preencha todos os campos obrigatórios!");
-    return null;
-  }
-
-  return {
-    solicitante,
-    loja,
-    servico,
-    orcamento,
-    infraspeak,
-    mesServico,
-    faturamento,
-    situacao,
-    projetoManutencao,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-}
-
-// Função para formatar o orçamento
-function formatarOrcamento(valor) {
-  const num = parseFloat(valor);
-  if (isNaN(num) || num < 0) {
-    return "0,00";
-  }
-  return num.toFixed(2).replace(".", ",");
-}
-
-// Função para limpar o formulário
-function limparFormulario() {
-  document.getElementById("formServico").reset();
 }
 
 // Função para filtrar registros
 function filtrarRegistros() {
   const filtroSolicitante = document
     .getElementById("filtroSolicitante")
-    .value.trim()
-    .toLowerCase();
+    .value.toLowerCase();
   const filtroMes = document.getElementById("filtroMes").value;
   const filtroSituacao = document.getElementById("filtroSituacao").value;
   const filtroFaturamento = document.getElementById("filtroFaturamento").value;
 
-  const filtered = registros.filter((registro) => {
-    return (
-      (!filtroSolicitante ||
-        registro.solicitante.toLowerCase().includes(filtroSolicitante)) &&
-      (!filtroMes || registro.mesServico === filtroMes) &&
-      (!filtroSituacao || registro.situacao === filtroSituacao) &&
-      (!filtroFaturamento || registro.faturamento === filtroFaturamento)
-    );
+  let query = db.collection("registros").orderBy("timestamp", "desc");
+
+  if (filtroMes) query = query.where("mes", "==", filtroMes);
+  if (filtroSituacao) query = query.where("situacao", "==", filtroSituacao);
+  if (filtroFaturamento)
+    query = query.where("faturamento", "==", filtroFaturamento);
+
+  const tbody = document.getElementById("corpoTabela");
+  tbody.innerHTML = "";
+
+  query.get().then((querySnapshot) => {
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (
+        filtroSolicitante &&
+        !data.solicitante.toLowerCase().includes(filtroSolicitante)
+      )
+        return;
+      const row = `
+        <tr>
+          <td>${doc.id}</td>
+          <td>${data.solicitante}</td>
+          <td>${data.loja}</td>
+          <td>${data.servico}</td>
+          <td>R$ ${data.orcamento.toFixed(2)}</td>
+          <td>${data.infraspeak}</td>
+          <td>${data.mes}</td>
+          <td>${data.faturamento}</td>
+          <td>${data.situacao}</td>
+          <td>${data.tipo}</td>
+          <td>${
+            data.arquivoUrl
+              ? `<a href="${data.arquivoUrl}" target="_blank">Download</a>`
+              : "Nenhum"
+          }</td>
+          <td><button onclick="deletarRegistro('${
+            doc.id
+          }')">Deletar</button></td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
   });
-  atualizarTabela(filtered);
 }
 
 // Função para limpar filtros
@@ -177,28 +175,43 @@ function limparFiltros() {
   document.getElementById("filtroMes").value = "";
   document.getElementById("filtroSituacao").value = "";
   document.getElementById("filtroFaturamento").value = "";
-  atualizarTabela(registros);
+  listarRegistros();
 }
 
 // Função para exportar para Excel
 function exportarParaExcel() {
-  if (registros.length === 0) {
-    alert("Nenhum registro para exportar!");
-    return;
+  const tbody = document.getElementById("corpoTabela");
+  const rows = tbody.getElementsByTagName("tr");
+  let csvContent = "data:text/csv;charset=utf-8,";
+  const headers = [
+    "ID,Solicitante,Loja,Serviço,Orçamento,InfraSpeak,Mês,Faturamento,Situação,Tipo,Arquivo",
+  ];
+  csvContent += headers.join(",") + "\n";
+
+  for (let row of rows) {
+    const cells = row.getElementsByTagName("td");
+    const rowData = [
+      cells[0].innerText,
+      cells[1].innerText,
+      cells[2].innerText,
+      cells[3].innerText,
+      cells[4].innerText,
+      cells[5].innerText,
+      cells[6].innerText,
+      cells[7].innerText,
+      cells[8].innerText,
+      cells[9].innerText,
+      cells[10].innerText === "Download"
+        ? cells[10].querySelector("a").href
+        : "Nenhum",
+    ];
+    csvContent += rowData.join(",") + "\n";
   }
 
-  let csv =
-    "ID,Solicitante,Loja,Serviço,Orçamento,InfraSpeak,Mês,Faturamento,Situação,Projeto/Manutenção\n";
-  registros.forEach((registro) => {
-    csv += `${registro.id},"${registro.solicitante}","${registro.loja}","${registro.servico}",R$ ${registro.orcamento},"${registro.infraspeak}","${registro.mesServico}","${registro.faturamento}","${registro.situacao}","${registro.projetoManutencao}"\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  link.setAttribute("href", url);
+  link.setAttribute("href", encodedUri);
   link.setAttribute("download", "registros_servicos.csv");
-  link.style.visibility = "hidden";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -208,3 +221,6 @@ function exportarParaExcel() {
 function imprimir() {
   window.print();
 }
+
+// Carregar registros ao iniciar
+listarRegistros();
