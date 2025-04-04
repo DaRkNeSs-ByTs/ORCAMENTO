@@ -12,16 +12,28 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const storage = firebase.storage();
+
+// Máscara para o campo Orçamento
+document.getElementById("orcamento").addEventListener("input", function (e) {
+  let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
+  value = (value / 100).toFixed(2); // Divide por 100 e fixa 2 casas decimais
+  value = value.replace(".", ","); // Substitui ponto por vírgula
+  value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); // Adiciona pontos como separadores de milhar
+  e.target.value = `R$ ${value}`;
+});
 
 // Função para adicionar registro
 function adicionarRegistro() {
-  const arquivoInput = document.getElementById("arquivo").files[0];
+  let orcamentoValue = document.getElementById("orcamento").value;
+  orcamentoValue = orcamentoValue
+    .replace("R$ ", "")
+    .replace(/\./g, "")
+    .replace(",", ".");
   const dados = {
     solicitante: document.getElementById("solicitante").value,
     loja: document.getElementById("loja").value,
     servico: document.getElementById("servico").value,
-    orcamento: parseFloat(document.getElementById("orcamento").value),
+    orcamento: parseFloat(orcamentoValue),
     infraspeak: document.getElementById("InfraSpeak").value,
     mes: document.getElementById("mesServico").value,
     faturamento: document.getElementById("faturamento").value,
@@ -30,39 +42,18 @@ function adicionarRegistro() {
     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
   };
 
-  if (arquivoInput) {
-    const storageRef = storage.ref(`orcamentos/${arquivoInput.name}`);
-    storageRef
-      .put(arquivoInput)
-      .then((snapshot) => {
-        return storageRef.getDownloadURL();
-      })
-      .then((url) => {
-        dados.arquivoUrl = url;
-        return db.collection("registros").add(dados);
-      })
-      .then((docRef) => {
-        console.log("Registro adicionado com ID: ", docRef.id);
-        listarRegistros();
-        document.getElementById("formServico").reset();
-      })
-      .catch((error) => {
-        console.error("Erro ao adicionar registro: ", error);
-        alert("Erro ao adicionar registro: " + error.message);
-      });
-  } else {
-    db.collection("registros")
-      .add(dados)
-      .then((docRef) => {
-        console.log("Registro adicionado com ID: ", docRef.id);
-        listarRegistros();
-        document.getElementById("formServico").reset();
-      })
-      .catch((error) => {
-        console.error("Erro ao adicionar registro: ", error);
-        alert("Erro ao adicionar registro: " + error.message);
-      });
-  }
+  db.collection("registros")
+    .add(dados)
+    .then((docRef) => {
+      console.log("Registro adicionado com ID: ", docRef.id);
+      listarRegistros();
+      document.getElementById("formServico").reset();
+      document.getElementById("orcamento").value = "R$ 0,00";
+    })
+    .catch((error) => {
+      console.error("Erro ao adicionar registro: ", error);
+      alert("Erro ao adicionar registro: " + error.message);
+    });
 }
 
 // Função para listar registros
@@ -82,17 +73,12 @@ function listarRegistros() {
             <td>${data.solicitante}</td>
             <td>${data.loja}</td>
             <td>${data.servico}</td>
-            <td>R$ ${data.orcamento.toFixed(2)}</td>
+            <td>R$ ${data.orcamento.toFixed(2).replace(".", ",")}</td>
             <td>${data.infraspeak}</td>
             <td>${data.mes}</td>
             <td>${data.faturamento}</td>
             <td>${data.situacao}</td>
             <td>${data.tipo}</td>
-            <td>${
-              data.arquivoUrl
-                ? `<a href="${data.arquivoUrl}" target="_blank">Download</a>`
-                : "Nenhum"
-            }</td>
             <td><button onclick="deletarRegistro('${
               doc.id
             }')">Deletar</button></td>
@@ -157,17 +143,12 @@ function filtrarRegistros() {
             <td>${data.solicitante}</td>
             <td>${data.loja}</td>
             <td>${data.servico}</td>
-            <td>R$ ${data.orcamento.toFixed(2)}</td>
+            <td>R$ ${data.orcamento.toFixed(2).replace(".", ",")}</td>
             <td>${data.infraspeak}</td>
             <td>${data.mes}</td>
             <td>${data.faturamento}</td>
             <td>${data.situacao}</td>
             <td>${data.tipo}</td>
-            <td>${
-              data.arquivoUrl
-                ? `<a href="${data.arquivoUrl}" target="_blank">Download</a>`
-                : "Nenhum"
-            }</td>
             <td><button onclick="deletarRegistro('${
               doc.id
             }')">Deletar</button></td>
@@ -183,57 +164,3 @@ function filtrarRegistros() {
 }
 
 // Função para limpar filtros
-function limparFiltros() {
-  document.getElementById("filtroSolicitante").value = "";
-  document.getElementById("filtroMes").value = "";
-  document.getElementById("filtroSituacao").value = "";
-  document.getElementById("filtroFaturamento").value = "";
-  listarRegistros();
-}
-
-// Função para exportar para Excel
-function exportarParaExcel() {
-  const tbody = document.getElementById("corpoTabela");
-  const rows = tbody.getElementsByTagName("tr");
-  let csvContent = "data:text/csv;charset=utf-8,";
-  const headers = [
-    "ID,Solicitante,Loja,Serviço,Orçamento,InfraSpeak,Mês,Faturamento,Situação,Tipo,Arquivo",
-  ];
-  csvContent += headers.join(",") + "\n";
-
-  for (let row of rows) {
-    const cells = row.getElementsByTagName("td");
-    const rowData = [
-      cells[0].innerText,
-      cells[1].innerText,
-      cells[2].innerText,
-      cells[3].innerText,
-      cells[4].innerText,
-      cells[5].innerText,
-      cells[6].innerText,
-      cells[7].innerText,
-      cells[8].innerText,
-      cells[9].innerText,
-      cells[10].innerText === "Download"
-        ? cells[10].querySelector("a").href
-        : "Nenhum",
-    ];
-    csvContent += rowData.join(",") + "\n";
-  }
-
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "registros_servicos.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-// Função para imprimir
-function imprimir() {
-  window.print();
-}
-
-// Carregar registros ao iniciar
-listarRegistros();
