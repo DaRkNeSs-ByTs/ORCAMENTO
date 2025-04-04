@@ -1,4 +1,18 @@
-// Configuração do Firebase (usando seus dados)
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD-2sAZHl_5LPYzmUKFfsz2sKpngXIlVSE",
+  authDomain: "gerenciador-servicos.firebaseapp.com",
+  projectId: "gerenciador-servicos",
+  storageBucket: "gerenciador-servicos.firebasestorage.app",
+  messagingSenderId: "557824843547",
+  appId: "1:557824843547:web:eacd2121ecfd3c2653bdbe",
+  measurementId: "G-ZMQ6MM17KK"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const firebaseConfig = {
   apiKey: "AIzaSyD-2sAZHl_5LPYzmUKFfsz2sKpngXIlVSE",
   authDomain: "gerenciador-servicos.firebaseapp.com",
@@ -9,12 +23,10 @@ const firebaseConfig = {
   measurementId: "G-ZMQ6MM17KK",
 };
 
-// Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// Função para adicionar registro
 function adicionarRegistro() {
   const arquivoInput = document.getElementById("arquivo").files[0];
   const dados = {
@@ -63,7 +75,6 @@ function adicionarRegistro() {
   }
 }
 
-// Função para listar registros
 function listarRegistros() {
   const tbody = document.getElementById("corpoTabela");
   tbody.innerHTML = "";
@@ -101,7 +112,6 @@ function listarRegistros() {
     });
 }
 
-// Função para deletar registro
 function deletarRegistro(id) {
   db.collection("registros")
     .doc(id)
@@ -115,7 +125,6 @@ function deletarRegistro(id) {
     });
 }
 
-// Função para filtrar registros
 function filtrarRegistros() {
   const filtroSolicitante = document
     .getElementById("filtroSolicitante")
@@ -169,7 +178,6 @@ function filtrarRegistros() {
   });
 }
 
-// Função para limpar filtros
 function limparFiltros() {
   document.getElementById("filtroSolicitante").value = "";
   document.getElementById("filtroMes").value = "";
@@ -178,7 +186,6 @@ function limparFiltros() {
   listarRegistros();
 }
 
-// Função para exportar para Excel
 function exportarParaExcel() {
   const tbody = document.getElementById("corpoTabela");
   const rows = tbody.getElementsByTagName("tr");
@@ -217,10 +224,8 @@ function exportarParaExcel() {
   document.body.removeChild(link);
 }
 
-// Função para imprimir
 function imprimir() {
   window.print();
 }
 
-// Carregar registros ao iniciar
 listarRegistros();
