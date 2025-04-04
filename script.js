@@ -1,16 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD-2sAZHl_5LPYzmUKFfsz2sKpngXIlVSE",
-  authDomain: "gerenciador-servicos.firebaseapp.com",
-  projectId: "gerenciador-servicos",
-  storageBucket: "gerenciador-servicos.firebasestorage.app",
-  messagingSenderId: "557824843547",
-  appId: "1:557824843547:web:eacd2121ecfd3c2653bdbe",
-  measurementId: "G-ZMQ6MM17KK"
-};
-
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const firebaseConfig = {
