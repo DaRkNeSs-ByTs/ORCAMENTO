@@ -2,7 +2,7 @@ body {
   font-family: Arial, sans-serif;
   margin: 20px;
   background-color: #f5f5f5;
-  background-image: url("img/teste.jpg");
+  background-image: url("img/Teste2.jpg");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -23,12 +23,13 @@ table {
   border-collapse: collapse;
   margin: 20px 0;
   background-color: #fff;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
 }
 
 th,
 td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
   text-align: left;
 }
 
@@ -55,128 +56,130 @@ tr:nth-child(even) {
   align-items: center;
   gap: 15px;
   margin-bottom: 15px;
-  flex-wrap: wrap;
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  justify-content: space-between;
+.form-row.button-row {
+  justify-content: flex-start; /* Alinha os botões à esquerda */
+  gap: 10px; /* Espaçamento menor entre os botões */
 }
 
 .form-group {
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 250px;
 }
 
 .form-group label {
-  width: 100px;
+  width: 120px;
   font-weight: bold;
   margin-right: 10px;
 }
 
 .form-group input,
 .form-group select {
-  flex: 1;
-  padding: 8px;
+  width: 100%;
+  max-width: 200px;
+  padding: 6px;
   border: 1px solid #ddd;
   border-radius: 3px;
-  box-sizing: border-box;
-  min-width: 150px;
 }
 
+.form-group input#orcamento {
+  max-width: 150px;
+}
+
+.form-group input[type="number"] {
+  width: 80px;
+  max-width: none;
+}
+
+/* Estilos para botões principais */
 button {
-  padding: 10px 20px;
+  padding: 10px 15px;
   background-color: #1f8623;
   color: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
+  margin-right: 5px;
 }
 
 button:hover {
   background-color: #2ca732;
 }
 
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
+/* Estilos para botões na tabela */
+td button {
+  padding: 6px 10px;
+  margin-right: 5px;
+  font-size: 14px;
 }
 
-.button-group.filter-buttons {
-  justify-content: flex-end;
-  flex-wrap: wrap;
+td button.editar {
+  background-color: #007bff;
 }
 
-.orcamento-group {
-  position: relative;
+td button.editar:hover {
+  background-color: #0056b3;
 }
 
-.orcamento-group input {
-  padding-left: 30px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+td button.remover {
+  background-color: #dc3545;
 }
 
-.orcamento-group::before {
-  content: "R$";
-  position: absolute;
-  left: 115px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #333;
-  font-weight: bold;
-  pointer-events: none;
+td button.remover:hover {
+  background-color: #b02a37;
 }
 
+/* Estilos para botões de Imprimir e Exportar */
+button[onclick="imprimirRegistros()"] {
+  background-color: #ff9500; /* Laranja para "Imprimir" */
+}
+
+button[onclick="imprimirRegistros()"]:hover {
+  background-color: #e08500;
+}
+
+button[onclick="exportarRegistros()"] {
+  background-color: #28a745; /* Verde escuro para "Exportar" */
+}
+
+button[onclick="exportarRegistros()"]:hover {
+  background-color: #218838;
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
-  .form-row,
-  .filter-row {
+  .form-row {
     flex-wrap: wrap;
   }
 
   .form-group {
     flex: 1 1 100%;
+    margin-bottom: 10px;
   }
 
   .form-group input,
   .form-group select {
-    width: 100%;
+    max-width: none;
   }
 
-  .button-group.filter-buttons {
-    justify-content: flex-start;
-  }
-
-  .button-group button {
-    flex: 1 1 100%;
-    margin-bottom: 10px;
-  }
-
-  .orcamento-group::before {
-    left: 110px;
-  }
-}
-
-/* Estilização para impressão */
-@media print {
-  .form-container,
-  .filter-container,
-  .button-group {
-    display: none;
-  }
   table {
-    width: 100%;
-    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
   }
-  th,
-  td {
-    border: 1px solid #000;
+
+  td button {
+    display: block;
+    margin: 5px 0;
+  }
+
+  button {
+    margin: 5px 0;
+  }
+
+  .form-row.button-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

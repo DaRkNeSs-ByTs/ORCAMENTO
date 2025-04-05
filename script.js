@@ -1,166 +1,367 @@
-// Configuração do Firebase (usando seus dados)
-const firebaseConfig = {
-  apiKey: "AIzaSyD-2sAZHl_5LPYzmUKFfsz2sKpngXIlVSE",
-  authDomain: "gerenciador-servicos.firebaseapp.com",
-  projectId: "gerenciador-servicos",
-  storageBucket: "gerenciador-servicos.appspot.com",
-  messagingSenderId: "557824843547",
-  appId: "1:557824843547:web:eacd2121ecfd3c2653bdbe",
-  measurementId: "G-ZMQ6MM17KK",
-};
+// Variáveis globais
+let idContador = 1;
+let registros = [];
+let registrosFiltrados = []; // Para armazenar os registros filtrados
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// Máscara para o campo Orçamento
-document.getElementById("orcamento").addEventListener("input", function (e) {
-  let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
-  value = (value / 100).toFixed(2); // Divide por 100 e fixa 2 casas decimais
-  value = value.replace(".", ","); // Substitui ponto por vírgula
-  value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); // Adiciona pontos como separadores de milhar
-  e.target.value = `R$ ${value}`;
-});
-
-// Função para adicionar registro
+// Função para adicionar ou editar um registro
 function adicionarRegistro() {
-  let orcamentoValue = document.getElementById("orcamento").value;
-  orcamentoValue = orcamentoValue
-    .replace("R$ ", "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const dados = {
-    solicitante: document.getElementById("solicitante").value,
-    loja: document.getElementById("loja").value,
-    servico: document.getElementById("servico").value,
-    orcamento: parseFloat(orcamentoValue),
-    infraspeak: document.getElementById("InfraSpeak").value,
-    mes: document.getElementById("mesServico").value,
-    faturamento: document.getElementById("faturamento").value,
-    situacao: document.getElementById("situacao").value,
-    tipo: document.getElementById("projetoManutencao").value,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+  const form = document.getElementById("formServico");
+  const id = form.getAttribute("data-id");
+
+  // Obter valores do formulário
+  const solicitante = document.getElementById("solicitante").value.trim();
+  const loja = document.getElementById("loja").value.trim();
+  const servico = document.getElementById("servico").value.trim();
+  const orcamentoInput = document.getElementById("orcamento").value;
+  const orcamento = parseFloat(
+    orcamentoInput.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()
+  );
+  const infraSpeak = document.getElementById("InfraSpeak").value.trim();
+  const mesServico = document.getElementById("mesServico").value;
+  const anoServico = document.getElementById("anoServico").value.trim();
+  const faturamento = document.getElementById("faturamento").value;
+  const situacao = document.getElementById("situacao").value;
+  const projetoManutencao = document.getElementById("projetoManutencao").value;
+
+  // Validação
+  if (
+    !solicitante ||
+    !loja ||
+    !servico ||
+    isNaN(orcamento) ||
+    orcamento < 0 ||
+    !infraSpeak ||
+    !mesServico ||
+    !anoServico ||
+    isNaN(anoServico) ||
+    anoServico < 2000 ||
+    anoServico > 2100 ||
+    !faturamento ||
+    !situacao ||
+    !projetoManutencao
+  ) {
+    alert(
+      "Por favor, preencha todos os campos obrigatórios corretamente, incluindo o Ano."
+    );
+    return;
+  }
+
+  const novoRegistro = {
+    id: id ? parseInt(id) : idContador++,
+    solicitante,
+    loja,
+    servico,
+    orcamento,
+    infraSpeak,
+    mesServico,
+    anoServico,
+    faturamento,
+    situacao,
+    projetoManutencao,
   };
 
-  db.collection("registros")
-    .add(dados)
-    .then((docRef) => {
-      console.log("Registro adicionado com ID: ", docRef.id);
-      listarRegistros();
-      document.getElementById("formServico").reset();
-      document.getElementById("orcamento").value = "R$ 0,00";
-    })
-    .catch((error) => {
-      console.error("Erro ao adicionar registro: ", error);
-      alert("Erro ao adicionar registro: " + error.message);
-    });
+  if (id) {
+    const index = registros.findIndex((r) => r.id === parseInt(id));
+    registros[index] = novoRegistro;
+    alert("Registro atualizado com sucesso!");
+  } else {
+    registros.push(novoRegistro);
+    alert("Registro adicionado com sucesso!");
+  }
+
+  form.reset();
+  form.setAttribute("data-id", "");
+  atualizarTabela(registros);
+  filtrarRegistros();
 }
 
-// Função para listar registros
-function listarRegistros() {
+// Função para atualizar a tabela principal
+function atualizarTabela(filtrados = registros) {
+  registrosFiltrados = filtrados;
   const tbody = document.getElementById("corpoTabela");
   tbody.innerHTML = "";
 
-  db.collection("registros")
-    .orderBy("timestamp", "desc")
-    .get()
-    .then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const row = `
-          <tr>
-            <td>${doc.id}</td>
-            <td>${data.solicitante}</td>
-            <td>${data.loja}</td>
-            <td>${data.servico}</td>
-            <td>R$ ${data.orcamento.toFixed(2).replace(".", ",")}</td>
-            <td>${data.infraspeak}</td>
-            <td>${data.mes}</td>
-            <td>${data.faturamento}</td>
-            <td>${data.situacao}</td>
-            <td>${data.tipo}</td>
-            <td><button onclick="deletarRegistro('${
-              doc.id
-            }')">Deletar</button></td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-    })
-    .catch((error) => {
-      console.error("Erro ao listar registros: ", error);
-      alert("Erro ao listar registros: " + error.message);
-    });
+  registrosFiltrados.forEach((registro) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${registro.id}</td>
+      <td>${registro.solicitante}</td>
+      <td>${registro.loja}</td>
+      <td>${registro.servico}</td>
+      <td>${formatarValorMonetario(registro.orcamento)}</td>
+      <td>${registro.infraSpeak}</td>
+      <td>${registro.mesServico} de ${registro.anoServico}</td>
+      <td>${registro.faturamento}</td>
+      <td>${registro.situacao}</td>
+      <td>${registro.projetoManutencao}</td>
+      <td>
+        <button class="editar" onclick="editarRegistro(${
+          registro.id
+        })">Editar</button>
+        <button class="remover" onclick="removerRegistro(${
+          registro.id
+        })">Remover</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
-// Função para deletar registro
-function deletarRegistro(id) {
-  db.collection("registros")
-    .doc(id)
-    .delete()
-    .then(() => {
-      console.log("Registro deletado");
-      listarRegistros();
-    })
-    .catch((error) => {
-      console.error("Erro ao deletar: ", error);
-      alert("Erro ao deletar registro: " + error.message);
-    });
+// Função para formatar valores monetários
+function formatarValorMonetario(valor) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// Função para formatar o campo de orçamento
+function formatarMoeda(event) {
+  let valor = event.target.value.replace(/\D/g, "");
+  if (!valor) {
+    event.target.value = "R$ 0,00";
+    return;
+  }
+  const numero = parseFloat(valor) / 100;
+  event.target.value = numero.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+// Função para editar um registro
+function editarRegistro(id) {
+  const registro = registros.find((r) => r.id === id);
+  if (!registro) return;
+
+  const form = document.getElementById("formServico");
+  form.setAttribute("data-id", id);
+  document.getElementById("solicitante").value = registro.solicitante;
+  document.getElementById("loja").value = registro.loja;
+  document.getElementById("servico").value = registro.servico;
+  document.getElementById("orcamento").value = formatarValorMonetario(
+    registro.orcamento
+  );
+  document.getElementById("InfraSpeak").value = registro.infraSpeak;
+  document.getElementById("mesServico").value = registro.mesServico;
+  document.getElementById("anoServico").value = registro.anoServico;
+  document.getElementById("faturamento").value = registro.faturamento;
+  document.getElementById("situacao").value = registro.situacao;
+  document.getElementById("projetoManutencao").value =
+    registro.projetoManutencao;
+}
+
+// Função para remover um registro
+function removerRegistro(id) {
+  registros = registros.filter((r) => r.id !== id);
+  atualizarTabela();
+  alert("Registro removido com sucesso!");
 }
 
 // Função para filtrar registros
 function filtrarRegistros() {
   const filtroSolicitante = document
     .getElementById("filtroSolicitante")
-    .value.toLowerCase();
+    .value.trim()
+    .toLowerCase();
   const filtroMes = document.getElementById("filtroMes").value;
+  const filtroAno = document.getElementById("filtroAno").value.trim();
   const filtroSituacao = document.getElementById("filtroSituacao").value;
   const filtroFaturamento = document.getElementById("filtroFaturamento").value;
+  const filtroInfraSpeak = document
+    .getElementById("filtroInfraSpeak")
+    .value.trim();
 
-  let query = db.collection("registros").orderBy("timestamp", "desc");
+  const filtrados = registros.filter((registro) => {
+    return (
+      (filtroSolicitante === "" ||
+        registro.solicitante.toLowerCase().includes(filtroSolicitante)) &&
+      (filtroMes === "" || registro.mesServico === filtroMes) &&
+      (filtroAno === "" || registro.anoServico === filtroAno) &&
+      (filtroSituacao === "" || registro.situacao === filtroSituacao) &&
+      (filtroFaturamento === "" ||
+        registro.faturamento === filtroFaturamento) &&
+      (filtroInfraSpeak === "" || registro.infraSpeak === filtroInfraSpeak)
+    );
+  });
 
-  if (filtroMes) query = query.where("mes", "==", filtroMes);
-  if (filtroSituacao) query = query.where("situacao", "==", filtroSituacao);
-  if (filtroFaturamento)
-    query = query.where("faturamento", "==", filtroFaturamento);
-
-  const tbody = document.getElementById("corpoTabela");
-  tbody.innerHTML = "";
-
-  query
-    .get()
-    .then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (
-          filtroSolicitante &&
-          !data.solicitante.toLowerCase().includes(filtroSolicitante)
-        )
-          return;
-        const row = `
-          <tr>
-            <td>${doc.id}</td>
-            <td>${data.solicitante}</td>
-            <td>${data.loja}</td>
-            <td>${data.servico}</td>
-            <td>R$ ${data.orcamento.toFixed(2).replace(".", ",")}</td>
-            <td>${data.infraspeak}</td>
-            <td>${data.mes}</td>
-            <td>${data.faturamento}</td>
-            <td>${data.situacao}</td>
-            <td>${data.tipo}</td>
-            <td><button onclick="deletarRegistro('${
-              doc.id
-            }')">Deletar</button></td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
-    })
-    .catch((error) => {
-      console.error("Erro ao filtrar registros: ", error);
-      alert("Erro ao filtrar registros: " + error.message);
-    });
+  atualizarTabela(filtrados);
 }
 
 // Função para limpar filtros
+function limparFiltros() {
+  document.getElementById("filtroSolicitante").value = "";
+  document.getElementById("filtroMes").value = "";
+  document.getElementById("filtroAno").value = "";
+  document.getElementById("filtroSituacao").value = "";
+  document.getElementById("filtroFaturamento").value = "";
+  document.getElementById("filtroInfraSpeak").value = "";
+  atualizarTabela();
+}
+
+// Função para gerar a tabela no formato da imagem
+function gerarTabelaImpressao() {
+  const manutencao = registrosFiltrados.filter(
+    (r) => r.projetoManutencao === "MANUTENCAO"
+  );
+  const projeto = registrosFiltrados.filter(
+    (r) => r.projetoManutencao === "PROJETO"
+  );
+
+  let html = `
+    <h2>Relatório de Serviços</h2>
+    <h3>Serviço (Manutenção)</h3>
+    <table class="tabela-impressao">
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>Loja</th>
+          <th>Serviço (Manutenção)</th>
+          <th>Valor (R$)</th>
+          <th>InfraSpeak</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  manutencao.forEach((registro) => {
+    html += `
+      <tr>
+        <td>${registro.mesServico} de ${registro.anoServico}</td>
+        <td>${registro.loja}</td>
+        <td>${registro.servico}</td>
+        <td>${formatarValorMonetario(registro.orcamento)}</td>
+        <td>${registro.infraSpeak}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+    <h3>Serviço (Projeto)</h3>
+    <table class="tabela-impressao">
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>Loja</th>
+          <th>Serviço (Projeto)</th>
+          <th>Valor (R$)</th>
+          <th>InfraSpeak</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  projeto.forEach((registro) => {
+    html += `
+      <tr>
+        <td>${registro.mesServico} de ${registro.anoServico}</td>
+        <td>${registro.loja}</td>
+        <td>${registro.servico}</td>
+        <td>${formatarValorMonetario(registro.orcamento)}</td>
+        <td>${registro.infraSpeak}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  return html;
+}
+
+// Função para imprimir os registros filtrados
+function imprimirRegistros() {
+  if (registrosFiltrados.length === 0) {
+    alert(
+      "Nenhum registro para imprimir. Adicione ou filtre registros primeiro."
+    );
+    return;
+  }
+
+  const tabelaImpressao = document.getElementById("tabelaImpressao");
+  tabelaImpressao.innerHTML = gerarTabelaImpressao();
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Relatório de Serviços</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h2, h3 { text-align: center; }
+          .tabela-impressao { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .tabela-impressao th, .tabela-impressao td { border: 1px solid #000; padding: 8px; text-align: left; }
+          .tabela-impressao th { background-color: #ffff00; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        ${tabelaImpressao.innerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+// Função para exportar os registros filtrados como Excel
+function exportarRegistros() {
+  if (registrosFiltrados.length === 0) {
+    alert(
+      "Nenhum registro para exportar. Adicione ou filtre registros primeiro."
+    );
+    return;
+  }
+
+  const manutencao = registrosFiltrados.filter(
+    (r) => r.projetoManutencao === "MANUTENCAO"
+  );
+  const projeto = registrosFiltrados.filter(
+    (r) => r.projetoManutencao === "PROJETO"
+  );
+
+  // Cabeçalhos do CSV
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Relatório de Serviços\n\n";
+  csvContent += "Serviço (Manutenção)\n";
+  csvContent += "Mês,Loja,Serviço (Manutenção),Valor (R$),InfraSpeak\n";
+
+  // Dados de Manutenção
+  manutencao.forEach((registro) => {
+    const linha = [
+      `"${registro.mesServico} de ${registro.anoServico}"`,
+      `"${registro.loja}"`,
+      `"${registro.servico}"`,
+      `"${formatarValorMonetario(registro.orcamento)}"`,
+      `"${registro.infraSpeak}"`,
+    ].join(",");
+    csvContent += linha + "\n";
+  });
+
+  csvContent += "\nServiço (Projeto)\n";
+  csvContent += "Mês,Loja,Serviço (Projeto),Valor (R$),InfraSpeak\n";
+
+  // Dados de Projeto
+  projeto.forEach((registro) => {
+    const linha = [
+      `"${registro.mesServico} de ${registro.anoServico}"`,
+      `"${registro.loja}"`,
+      `"${registro.servico}"`,
+      `"${formatarValorMonetario(registro.orcamento)}"`,
+      `"${registro.infraSpeak}"`,
+    ].join(",");
+    csvContent += linha + "\n";
+  });
+
+  // Criar e baixar o arquivo
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "relatorio-servicos.xlsx");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Adicionar evento ao campo de orçamento
+document.getElementById("orcamento").addEventListener("input", formatarMoeda);

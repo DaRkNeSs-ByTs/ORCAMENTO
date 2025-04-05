@@ -10,26 +10,41 @@
     <div class="container">
       <h1>Gerenciador de Serviços</h1>
 
-      <!-- Formulário de Registro -->
       <div class="form-container">
         <h2>Criar Registro</h2>
-        <form id="formServico">
+        <form id="formServico" data-id="">
           <div class="form-row">
             <div class="form-group">
               <label for="solicitante">Solicitante:</label>
-              <input type="text" id="solicitante" required />
+              <input
+                type="text"
+                id="solicitante"
+                placeholder="Digite o solicitante"
+                required
+              />
             </div>
             <div class="form-group">
               <label for="loja">Loja:</label>
-              <input type="text" id="loja" required />
+              <input
+                type="text"
+                id="loja"
+                placeholder="Digite a loja"
+                required
+              />
+              .Concurrent
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label for="servico">Serviço:</label>
-              <input type="text" id="servico" required />
+              <input
+                type="text"
+                id="servico"
+                placeholder="Digite o serviço"
+                required
+              />
             </div>
-            <div class="form-group orcamento-group">
+            <div class="form-group">
               <label for="orcamento">Orçamento:</label>
               <input
                 type="text"
@@ -42,10 +57,15 @@
           <div class="form-row">
             <div class="form-group">
               <label for="InfraSpeak">InfraSpeak:</label>
-              <input type="text" id="InfraSpeak" required />
+              <input
+                type="text"
+                id="InfraSpeak"
+                placeholder="Digite o InfraSpeak"
+                required
+              />
             </div>
             <div class="form-group">
-              <label for="mesServico">Mês:</label>
+              <label for="mesServico">Mês do Serviço:</label>
               <select id="mesServico">
                 <option value="Janeiro">Janeiro</option>
                 <option value="Fevereiro">Fevereiro</option>
@@ -60,6 +80,15 @@
                 <option value="Novembro">Novembro</option>
                 <option value="Dezembro">Dezembro</option>
               </select>
+              <span style="margin: 0 5px">de</span>
+              <input
+                type="number"
+                id="anoServico"
+                placeholder="Ano"
+                min="2000"
+                max="2100"
+                required
+              />
             </div>
           </div>
           <div class="form-row">
@@ -71,7 +100,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="situacao">Situação:</label>
+              <label for="situacao">Situação do Serviço:</label>
               <select id="situacao">
                 <option value="PENDENTE">Pendente</option>
                 <option value="CONCLUÍDO">Concluído</option>
@@ -80,28 +109,29 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="projetoManutencao">Tipo:</label>
+              <label for="projetoManutencao">Tipo do Serviço:</label>
               <select id="projetoManutencao">
                 <option value="MANUTENCAO">Manutenção</option>
                 <option value="PROJETO">Projeto</option>
               </select>
             </div>
           </div>
-          <div class="button-group">
-            <button type="button" onclick="adicionarRegistro()">
-              Adicionar Registro
-            </button>
-          </div>
+          <button type="button" onclick="adicionarRegistro()">
+            Adicionar Registro
+          </button>
         </form>
       </div>
 
-      <!-- Filtros -->
       <div class="filter-container">
         <h2>Filtros</h2>
-        <div class="filter-row">
+        <div class="form-row">
           <div class="form-group">
             <label for="filtroSolicitante">Solicitante:</label>
-            <input type="text" id="filtroSolicitante" />
+            <input
+              type="text"
+              id="filtroSolicitante"
+              placeholder="Filtrar por solicitante"
+            />
           </div>
           <div class="form-group">
             <label for="filtroMes">Mês:</label>
@@ -120,6 +150,14 @@
               <option value="Novembro">Novembro</option>
               <option value="Dezembro">Dezembro</option>
             </select>
+            <span style="margin: 0 5px">de</span>
+            <input
+              type="number"
+              id="filtroAno"
+              placeholder="Ano"
+              min="2000"
+              max="2100"
+            />
           </div>
           <div class="form-group">
             <label for="filtroSituacao">Situação:</label>
@@ -129,6 +167,8 @@
               <option value="CONCLUÍDO">Concluído</option>
             </select>
           </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label for="filtroFaturamento">Faturamento:</label>
             <select id="filtroFaturamento">
@@ -137,20 +177,25 @@
               <option value="PAGO">Pago</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="filtroInfraSpeak">InfraSpeak:</label>
+            <input
+              type="text"
+              id="filtroInfraSpeak"
+              placeholder="Filtrar por InfraSpeak"
+            />
+          </div>
         </div>
-        <div class="button-group filter-buttons">
+        <div class="form-row button-row">
           <button type="button" onclick="filtrarRegistros()">Filtrar</button>
           <button type="button" onclick="limparFiltros()">
             Limpar Filtros
           </button>
-          <button type="button" onclick="exportarParaExcel()">
-            Exportar para Excel
-          </button>
-          <button type="button" onclick="imprimir()">Imprimir</button>
+          <button type="button" onclick="imprimirRegistros()">Imprimir</button>
+          <button type="button" onclick="exportarRegistros()">Exportar</button>
         </div>
       </div>
 
-      <!-- Tabela de Registros -->
       <h2>Registros</h2>
       <table>
         <thead>
@@ -168,15 +213,13 @@
             <th>Ações</th>
           </tr>
         </thead>
-        <tbody id="corpoTabela">
-          <!-- Os registros serão inseridos aqui pelo JavaScript -->
-        </tbody>
+        <tbody id="corpoTabela"></tbody>
       </table>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+    <!-- Div oculta para renderizar a tabela de impressão/exportação -->
+    <div id="tabelaImpressao" style="display: none"></div>
+
     <script src="script.js"></script>
   </body>
 </html>
